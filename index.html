@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Rocket Clicker</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: radial-gradient(circle at center, #0b1a3a, #000);
+      color: #fff;
+      overflow: hidden;
+    }
+    #game {
+      display: flex;
+      height: 100vh;
+    }
+    #left, #right {
+      padding: 20px;
+    }
+    #left {
+      flex: 2;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+    #right {
+      flex: 1;
+      background: rgba(255,255,255,0.05);
+      backdrop-filter: blur(6px);
+      overflow-y: auto;
+      border-left: 2px solid rgba(255,255,255,0.1);
+    }
+    #rocket {
+      width: 200px;
+      transition: transform 0.1s;
+      cursor: pointer;
+      animation: float 3s ease-in-out infinite;
+    }
+    @keyframes float {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-20px); }
+    }
+    .shake {
+      animation: shake 0.2s;
+    }
+    @keyframes shake {
+      0% { transform: translateX(0); }
+      25% { transform: translateX(-10px); }
+      50% { transform: translateX(10px); }
+      75% { transform: translateX(-10px); }
+      100% { transform: translateX(0); }
+    }
+    .upgrade, .rebirthBtn {
+      background: rgba(255,255,255,0.1);
+      margin-bottom: 10px;
+      padding: 10px;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+    .upgrade:hover, .rebirthBtn:hover {
+      background: rgba(255,255,255,0.2);
+      transform: scale(1.02);
+    }
+  </style>
+</head>
+<body>
+<div id="game">
+  <div id="left">
+    <img id="rocket" src="https://upload.wikimedia.org/wikipedia/commons/e/e5/SimpleRocket.png" />
+    <h1 id="fuel">Fuel: 0</h1>
+    <h2 id="cps">Fuel per second: 0</h2>
+    <h2 id="rebirths">Rebirths: 0</h2>
+  </div>
+  <div id="right">
+    <h2>Upgrades</h2>
+    <div id="upgrades"></div>
+
+    <h2>Rebirth</h2>
+    <div class="rebirthBtn" onclick="rebirth()">Rebirth for x2 multiplier</div>
+  </div>
+</div>
+
+<script>
+let fuel = 0;
+let cps = 0;
+let rebirthCount = 0;
+let multiplier = 1;
+
+const upgrades = [
+  {name: "Mini Booster", cost: 20, cps: 1},
+  {name: "Medium Booster", cost: 100, cps: 5},
+  {name: "Large Booster", cost: 500, cps: 20},
+  {name: "Space Drone", cost: 2000, cps: 100},
+  {name: "Satellite Array", cost: 10000, cps: 500},
+  {name: "Fuel Planet", cost: 50000, cps: 2500},
+  {name: "Dyson Extractor", cost: 250000, cps: 10000},
+  {name: "Galaxy Harvester", cost: 1_000_000, cps: 50000}
+];
+
+function renderUpgrades() {
+  const box = document.getElementById("upgrades");
+  box.innerHTML = "";
+  upgrades.forEach((u, i) => {
+    const div = document.createElement("div");
+    div.className = "upgrade";
+    div.innerHTML = `${u.name}<br>Cost: ${u.cost}<br>+${u.cps} cps`;
+    div.onclick = () => buyUpgrade(i);
+    box.appendChild(div);
+  });
+}
+
+function buyUpgrade(i) {
+  const u = upgrades[i];
+  if (fuel >= u.cost) {
+    fuel -= u.cost;
+    cps += u.cps * multiplier;
+    u.cost = Math.floor(u.cost * 1.5);
+    update();
+    renderUpgrades();
+  }
+}
+
+document.getElementById("rocket").onclick = () => {
+  fuel += 1 * multiplier;
+  const r = document.getElementById("rocket");
+  r.classList.add("shake");
+  setTimeout(() => r.classList.remove("shake"), 200);
+  update();
+};
+
+setInterval(() => {
+  fuel += cps;
+  update();
+}, 1000);
+
+function update() {
+  document.getElementById("fuel").innerText = `Fuel: ${Math.floor(fuel)}`;
+  document.getElementById("cps").innerText = `Fuel per second: ${cps}`;
+  document.getElementById("rebirths").innerText = `Rebirths: ${rebirthCount}`;
+}
+
+function rebirth() {
+  if (fuel < 100000) return alert("Need 100k fuel to rebirth!");
+  fuel = 0;
+  cps = 0;
+  rebirthCount++;
+  multiplier = 1 + rebirthCount;
+  renderUpgrades();
+  update();
+}
+
+renderUpgrades();
+</script>
+</body>
+</html>
