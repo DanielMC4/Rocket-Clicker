@@ -1,191 +1,292 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Rocket Clicker</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Rocket Clicker — Orbital Edition</title>
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap');
+    :root{
+      --bg-1: #071428; --bg-2:#0b2440; --panel:#071a2a; --accent:#7ef0ff; --accent2:#ff7ab6; --muted:#9db7ce;
+      --glass: rgba(255,255,255,0.03); --glass-2: rgba(255,255,255,0.02);
+      font-family: Inter, system-ui, -apple-system, 'Segoe UI', Roboto, Arial;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%;margin:0;background:radial-gradient(1000px 600px at 10% 10%, rgba(126,240,255,0.04), transparent), linear-gradient(180deg,var(--bg-1),var(--bg-2));color:#e8f7ff}
 
-    body {
-      margin: 0;
-      font-family: 'Orbitron', sans-serif;
-      background: linear-gradient(135deg, #1e0533, #11071c, #0a0114);
-      color: #e0e0ff;
-      overflow: hidden;
-      text-shadow: 0 0 5px #00ffff;
-    }
+    /* Layout */
+    #game{display:flex;height:100vh;gap:12px;padding:18px}
+    #left{flex:2;display:flex;align-items:center;justify-content:center;position:relative}
+    #right{width:360px;background:linear-gradient(180deg,rgba(255,255,255,0.02),transparent);border-radius:14px;padding:18px;box-shadow:0 12px 40px rgba(2,6,23,0.6);border:1px solid rgba(255,255,255,0.03);overflow:auto}
 
-    #game {
-      display: flex;
-      height: 100vh;
-    }
+    /* Title */
+    .title{position:absolute;left:28px;top:24px;font-weight:800;font-size:20px;color:var(--accent);text-shadow:0 6px 30px rgba(0,0,0,0.6)}
 
-    #left {
-      flex: 2;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      position: relative;
-    }
+    /* Rocket stage */
+    .stage{width:100%;max-width:900px;height:620px;border-radius:18px;background:linear-gradient(180deg,rgba(255,255,255,0.01),rgba(0,0,0,0.06));display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;border:1px solid rgba(255,255,255,0.03)}
 
-    #right {
-      flex: 1;
-      background: rgba(15, 0, 30, 0.7);
-      backdrop-filter: blur(10px);
-      overflow-y: auto;
-      border-left: 2px solid rgba(0, 255, 255, 0.3);
-      display: flex;
-      flex-direction: column;
-    }
+    /* Rocket image (centered & larger) */
+    #rocket{width:420px;height:auto;cursor:pointer;transform-origin:center bottom;transition:transform .18s cubic-bezier(.2,.9,.2,1), filter .2s}
 
-    #title {
-      position: absolute;
-      top: 20px;
-      font-size: 48px;
-      font-weight: 900;
-      background: linear-gradient(45deg, #ff00ff, #00ffff);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-      text-shadow: 0 0 20px rgba(0, 255, 255, 0.5);
-      animation: pulse 2s infinite;
-    }
+    /* idle bob */
+    @keyframes bob {0%{transform:translateY(0)}50%{transform:translateY(-8px)}100%{transform:translateY(0)}}
+    #rocket.idle{animation:bob 2200ms ease-in-out infinite}
 
-    @keyframes pulse {
-      0%, 100% { transform: scale(1); }
-      50% { transform: scale(1.05); }
-    }
-    
-    #rocket {
-      width: 350px;
-      cursor: pointer;
-      animation: rock 4s ease-in-out infinite;
-      filter: drop-shadow(0 0 20px rgba(0, 255, 255, 0.7));
-    }
-    
-    @keyframes rock {
-      0%, 100% { transform: rotate(-5deg); }
-      50% { transform: rotate(5deg); }
-    }
-    
-    .clicked {
-      animation: rocket-click 0.3s ease-out;
-    }
-    
-    @keyframes rocket-click {
-      0% { transform: scale(1); }
-      50% { transform: scale(1.2); }
-      100% { transform: scale(1); }
-    }
+    /* rocking left-right on click */
+    @keyframes rockLeft{0%{transform:rotate(0)}30%{transform:rotate(-12deg)}60%{transform:rotate(6deg)}100%{transform:rotate(0)}}
+    @keyframes rockRight{0%{transform:rotate(0)}30%{transform:rotate(12deg)}60%{transform:rotate(-6deg)}100%{transform:rotate(0)}}
+    #rocket.rock-left{animation:rockLeft 650ms cubic-bezier(.2,.9,.2,1)}
+    #rocket.rock-right{animation:rockRight 650ms cubic-bezier(.2,.9,.2,1)}
 
-    .upgrade, .rebirthBtn, .save-btn, .import-btn {
-      background: rgba(138, 43, 226, 0.2);
-      border: 1px solid rgba(0, 255, 255, 0.3);
-      margin-bottom: 10px;
-      padding: 15px;
-      border-radius: 10px;
-      cursor: pointer;
-      transition: all 0.3s ease;
-      position: relative;
-      overflow: hidden;
-    }
-    .upgrade:hover, .rebirthBtn:hover, .save-btn:hover, .import-btn:hover {
-      background: rgba(138, 43, 226, 0.4);
-      transform: translateY(-3px) scale(1.02);
-      box-shadow: 0 5px 15px rgba(0, 255, 255, 0.4);
-    }
-    .upgrade.disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-      transform: none !important;
-    }
-    .upgrade.disabled:hover {
-        background: rgba(138, 43, 226, 0.2);
-        transform: none !important;
-        box-shadow: none;
-    }
+    /* flame particles */
+    .flame{position:absolute;bottom:92px;width:14px;height:28px;border-radius:50%;opacity:0.95;filter:drop-shadow(0 12px 20px rgba(255,120,60,0.25));}
 
-    #stats {
-      padding: 20px;
-      font-size: 18px;
-      text-align: center;
-      border-bottom: 2px solid rgba(0, 255, 255, 0.3);
-      background: rgba(15, 0, 30, 0.5);
-    }
-    #stats div {
-      margin-bottom: 10px;
-    }
-    #upgrades-container {
-      padding: 20px;
-      flex-grow: 1;
-      overflow-y: auto;
-    }
-    h2 {
-      text-align: center;
-      margin-top: 0;
-      color: #00ffff;
-      font-weight: 700;
-    }
-    .save-controls {
-        padding: 10px 20px;
-        display: flex;
-        flex-direction: column;
-        gap: 10px;
-    }
+    /* stats pinned right edge (thin column) */
+    #stats{position:fixed;right:12px;top:12px;width:220px;text-align:right;background:linear-gradient(180deg,rgba(255,255,255,0.02),transparent);padding:10px;border-radius:10px;border:1px solid rgba(255,255,255,0.03)}
+    #stats div{font-weight:700;color:var(--muted);font-size:13px}
+    #stats strong{display:block;color:var(--accent);font-size:18px}
+
+    /* upgrades list */
+    .section-title{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px}
+    .upgrades{display:grid;grid-template-columns:1fr;gap:8px}
+    .upgrade{display:flex;gap:10px;align-items:center;padding:10px;border-radius:10px;background:var(--glass-2);border:1px solid rgba(255,255,255,0.02);transition:transform .12s, box-shadow .12s}
+    .upgrade:hover{transform:translateY(-4px);box-shadow:0 10px 30px rgba(0,0,0,0.45)}
+    .up-ico{width:48px;height:48px;border-radius:8px;background:linear-gradient(180deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;font-weight:900}
+    .up-info{flex:1}
+    .up-info .name{font-weight:800}
+    .up-cost{min-width:80px;text-align:right;font-weight:800;color:var(--accent2)}
+    .buy{background:linear-gradient(90deg,var(--accent),var(--accent2));border:none;padding:8px 10px;border-radius:8px;color:#071428;font-weight:800;cursor:pointer}
+
+    /* footer small */
+    .controls{display:flex;gap:8px;margin-top:12px}
+    .ghost{background:transparent;border:1px solid rgba(255,255,255,0.04);padding:8px 10px;border-radius:8px;color:var(--muted);cursor:pointer}
+
+    /* responsive */
+    @media(max-width:1000px){#right{width:320px} #rocket{width:320px}}
   </style>
 </head>
 <body>
-<div id="game">
-  <div id="left">
-    <h1 id="title">ROCKET CLICKER</h1>
-    <img id="rocket" src="https://www.pngmart.com/files/16/Rocket-PNG-Transparent-Image.png" alt="Rocket" />
-  </div>
-  <div id="right">
+  <div id="game">
+    <div id="left">
+      <div class="title">🚀 Rocket Clicker — Orbital Edition</div>
+      <div class="stage" id="stage">
+        <!-- Rocket PNG (use container path) -->
+        <img id="rocket" class="idle" src="/mnt/data/pngegg.png" alt="Rocket PNG">
+        <!-- flame container (particles inserted via JS) -->
+      </div>
+    </div>
+
+    <aside id="right">
+      <div class="section-title">Upgrades</div>
+      <div class="upgrades" id="upgrades"></div>
+
+      <div style="height:10px"></div>
+      <div class="section-title">Prestige / Rebirth</div>
+      <div style="display:flex;gap:8px;align-items:center;justify-content:space-between;margin-bottom:8px">
+        <div style="color:var(--muted)">Rebirths give permanent multiplier</div>
+        <button class="buy" id="rebirthBtn">Rebirth</button>
+      </div>
+
+      <div class="section-title">Save / Export</div>
+      <div class="controls">
+        <button class="ghost" id="saveBtn">Save</button>
+        <button class="ghost" id="exportBtn">Export</button>
+        <button class="ghost" id="importBtn">Import</button>
+      </div>
+
+      <div style="height:20px"></div>
+      <div style="color:var(--muted);font-size:12px">Version 2 — More grind, lots of upgrades, animations</div>
+    </aside>
+
     <div id="stats">
-      <div id="fuel">Fuel: 0</div>
-      <div id="cps">Fuel/sec: 0</div>
-      <div id="rebirths">Rebirths: 0</div>
-      <div id="multiplier">Multiplier: x1</div>
-    </div>
-    <div id="upgrades-container">
-        <h2>Upgrades</h2>
-        <div id="upgrades"></div>
-        <h2>Rebirth</h2>
-        <div class="rebirthBtn" onclick="rebirth()">Rebirth for x2 Multiplier<br>(Cost: 5,000,000 Fuel)</div>
-        <h2>Save/Load</h2>
-        <div class="save-controls">
-            <button class="save-btn" onclick="exportSave()">Export Save</button>
-            <button class="import-btn" onclick="document.getElementById('importFile').click();">Import Save</button>
-            <input type="file" id="importFile" style="display: none;" onchange="handleImport(event)">
-        </div>
+      <div>Fuel <strong id="fuel">0</strong></div>
+      <div>Fuel / sec <strong id="cps">0</strong></div>
+      <div>Clicks <strong id="clicks">0</strong></div>
+      <div>Rebirths <strong id="rebirths">0</strong></div>
     </div>
   </div>
-</div>
 
-<script>
-let fuel = 0;
-let cps = 0;
-let rebirthCount = 0;
-let multiplier = 1;
+  <script>
+    // --- Game state ---
+    const SAVE_KEY = 'rocket_clicker_orbital_v2';
+    let state = {
+      fuel: 0,
+      clicks: 0,
+      cps: 0,
+      rebirths: 0,
+      multiplier: 1,
+      producers: {},
+      upgradesBought: {}
+    };
 
-const upgrades = [
-  { name: "Mini Booster", baseCost: 200, cps: 0.2, owned: 0 },
-  { name: "Medium Booster", baseCost: 1500, cps: 1, owned: 0 },
-  { name: "Large Booster", baseCost: 10000, cps: 4, owned: 0 },
-  { name: "Space Drone", baseCost: 60000, cps: 12, owned: 0 },
-  { name: "Satellite Array", baseCost: 300000, cps: 50, owned: 0 },
-  { name: "Fuel Planet", baseCost: 1_000_000, cps: 150, owned: 0 },
-  { name: "Dyson Extractor", baseCost: 5_000_000, cps: 600, owned: 0 },
-  { name: "Galaxy Harvester", baseCost: 25_000_000, cps: 2500, owned: 0 },
-  { name: "Quantum Condenser", baseCost: 100_000_000, cps: 10000, owned: 0 },
-  { name: "Warp Drive", baseCost: 500_000_000, cps: 50000, owned: 0 },
-  { name: "Nebula Siphon", baseCost: 2_500_000_000, cps: 250000, owned: 0 },
-  { name: "Black Hole Fueler", baseCost: 10_000_000_000, cps: 1_000_000, owned: 0 },
-  { name: "Time Loop Generator", baseCost: 50_000_000_000, cps: 5_000_000, owned: 0 },
-  { name: "Dimensional Rift", baseCost: 250_000_000_000, cps: 25_000_000, owned: 0 },
-  { name: "Cosmic Creator", baseCost: 1_000_000_000_000, cps: 100_000_000, owned: 0 },
-  { name: "Singularity Core", baseCost: 5_000_000_000_000, cps: 500_000_000, owned: 0 },
-  { name: "Reality Engine", baseCost: 25_000_000_000_000, cps: 2_500_000_000, owned: 0 },
-  { name: "Void Tapper", baseCost: 100_000_000_000_000, cps: 10_000_000_000, owned:
+    // --- Upgrades (24 items, icons are emojis for simplicity) ---
+    const ALL_UPGRADES = [
+      {id:'u1', name:'Mini Booster', cost:200, cps:0.3, icon:'🔥'},
+      {id:'u2', name:'Double Nozzle', cost:900, cps:1, icon:'🔧'},
+      {id:'u3', name:'Ion Injector', cost:3200, cps:4, icon:'⚡'},
+      {id:'u4', name:'Space Drone', cost:12000, cps:12, icon:'🤖'},
+      {id:'u5', name:'Cargo Bay', cost:48000, cps:40, icon:'📦'},
+      {id:'u6', name:'Satellite Array', cost:200000, cps:140, icon:'🛰️'},
+      {id:'u7', name:'Fuel Planet', cost:900000, cps:480, icon:'🪐'},
+      {id:'u8', name:'Dyson Extractor', cost:4_200_000, cps:2000, icon:'💠'},
+      {id:'u9', name:'Antimatter Pump', cost:18_000_000, cps:9000, icon:'✨'},
+      {id:'u10', name:'Warp Harvester', cost:80_000_000, cps:42000, icon:'🌀'},
+      {id:'u11', name:'Quantum Filter', cost:320_000_000, cps:180_000, icon:'🔮'},
+      {id:'u12', name:'Genesis Core', cost:1_500_000_000, cps:820_000, icon:'🔱'},
+      {id:'u13', name:'Micro-Fusion Grid', cost:6_600_000_000, cps:3_600_000, icon:'🔥🔥'},
+      {id:'u14', name:'Stellar Farm', cost:30_000_000_000, cps:16_000_000, icon:'🌟'},
+      {id:'u15', name:'Blackhole Tap', cost:120_000_000_000, cps:85_000_000, icon:'🕳️'},
+      {id:'u16', name:'Temporal Condenser', cost:500_000_000_000, cps:430_000_000, icon:'⏳'},
+      {id:'u17', name:'Cosmic Orchard', cost:2_100_000_000_000, cps:2_200_000_000, icon:'🌌'},
+      {id:'u18', name:'Nebula Refinery', cost:9_000_000_000_000, cps:11_000_000_000, icon:'☁️'},
+      {id:'u19', name:'Gravity Well', cost:40_000_000_000_000, cps:60_000_000_000, icon:'🔩'},
+      {id:'u20', name:'Dark Energy Mine', cost:180_000_000_000_000, cps:340_000_000_000, icon:'🌑'},
+      {id:'u21', name:'Multiverse Farms', cost:800_000_000_000_000, cps:2_000_000_000_000, icon:'🪞'},
+      {id:'u22', name:'Singularity Engine', cost:3_600_000_000_000_000, cps:8_500_000_000_000, icon:'⚙️'},
+      {id:'u23', name:'Omega Extractor', cost:16_000_000_000_000_000, cps:40_000_000_000_000, icon:'🔱🔱'},
+      {id:'u24', name:'Reality Forge', cost:75_000_000_000_000_000, cps:200_000_000_000_000, icon:'🔥🔮'}
+    ];
+
+    // Utility: format large numbers
+    function fmt(n){
+      if (n < 1000) return Math.floor(n);
+      const units = ['K','M','B','T','Qa','Qi','Sx','Sp','Oc','No'];
+      let p = 0; let v = n;
+      while(v >= 1000 && p < units.length-1){ v /= 1000; p++; }
+      return v.toFixed(v<10?2:1) + units[p-1];
+    }
+
+    // --- Rendering upgrades ---
+    const upgradesEl = document.getElementById('upgrades');
+    function renderUpgrades(){
+      upgradesEl.innerHTML = '';
+      ALL_UPGRADES.forEach(u => {
+        const div = document.createElement('div');
+        div.className = 'upgrade';
+
+        const ico = document.createElement('div'); ico.className='up-ico'; ico.textContent = u.icon;
+        const info = document.createElement('div'); info.className='up-info';
+        const name = document.createElement('div'); name.className='name'; name.textContent = u.name;
+        const desc = document.createElement('div'); desc.style.fontSize='13px'; desc.style.color='var(--muted)'; desc.textContent = `+${fmt(u.cps)} cps`;
+        info.appendChild(name); info.appendChild(desc);
+
+        const right = document.createElement('div'); right.style.display='flex'; right.style.flexDirection='column'; right.style.alignItems='flex-end';
+        const cost = document.createElement('div'); cost.className='up-cost'; cost.textContent = fmt(u.cost);
+        const btn = document.createElement('button'); btn.className='buy'; btn.textContent='Buy';
+        btn.onclick = ()=>buyUpgrade(u.id);
+        right.appendChild(cost); right.appendChild(btn);
+
+        div.appendChild(ico); div.appendChild(info); div.appendChild(right);
+        upgradesEl.appendChild(div);
+      });
+    }
+
+    // --- Buy logic ---
+    function buyUpgrade(id){
+      const u = ALL_UPGRADES.find(x=>x.id===id);
+      if(!u) return;
+      if(state.fuel < u.cost) { flashInsufficient(); return; }
+      state.fuel -= u.cost;
+      state.cps += u.cps;
+      // scale cost up aggressively for grind
+      u.cost = Math.floor(u.cost * 2.5);
+      state.upgradesBought[id] = (state.upgradesBought[id] || 0) + 1;
+      saveStateDebounced(); renderAll();
+      spawnFlames(6);
+    }
+
+    // --- Rocket click handling (rock side-to-side each click) ---
+    const rocketEl = document.getElementById('rocket');
+    let rockToggle = false;
+    rocketEl.addEventListener('click', ()=>{
+      state.fuel += 1 * state.multiplier; state.clicks++;
+      // toggle rock direction
+      rocketEl.classList.remove('idle','rock-left','rock-right');
+      rockToggle = !rockToggle;
+      rocketEl.classList.add(rockToggle? 'rock-left' : 'rock-right');
+      setTimeout(()=>{ rocketEl.classList.remove('rock-left','rock-right'); rocketEl.classList.add('idle'); }, 680);
+      spawnFlames(8);
+      renderAll();
+    });
+
+    // --- Flame particles ---
+    const stage = document.getElementById('stage');
+    function spawnFlames(n){
+      for(let i=0;i<n;i++){
+        const p = document.createElement('div'); p.className='flame';
+        const size = 12 + Math.random()*28; p.style.width = size+'px'; p.style.height = size*1.6+'px';
+        const hue = Math.random()>0.5 ? 'linear-gradient(180deg,#ffb86b,#ff6b6b)' : 'linear-gradient(180deg,#ffd36b,#ff7ab6)';
+        p.style.left = `calc(50% - ${size/2}px + ${Math.random()*80-40}px)`;
+        p.style.bottom = '88px';
+        p.style.background = hue; stage.appendChild(p);
+        const dx = (Math.random()-0.5)*200; const dy = 120 + Math.random()*140; const rot = (Math.random()-0.5)*720;
+        p.animate([{transform:'translateY(0) rotate(0) scale(1)', opacity:1},{transform:`translate(${dx}px, -${dy}px) rotate(${rot}deg) scale(.4)`, opacity:0}],{duration:600+Math.random()*600,easing:'cubic-bezier(.2,.9,.2,1)'});
+        setTimeout(()=>p.remove(),1300);
+      }
+    }
+
+    // flash insufficient funds
+    function flashInsufficient(){
+      const s = document.getElementById('stats'); s.animate([{boxShadow:'0 0 0 rgba(255,0,0,0)'},{boxShadow:'0 0 20px rgba(255,80,80,0.6)'}],{duration:350,iterations:1});
+    }
+
+    // --- Passive production tick ---
+    setInterval(()=>{
+      // production slowed to make it grindier
+      state.fuel += state.cps * 0.5;
+      renderAll();
+    },1000);
+
+    // render top-level
+    function renderAll(){
+      document.getElementById('fuel').textContent = Math.floor(state.fuel).toLocaleString();
+      document.getElementById('cps').textContent = fmt(state.cps*0.5);
+      document.getElementById('clicks').textContent = state.clicks.toLocaleString();
+      document.getElementById('rebirths').textContent = state.rebirths;
+      // update upgrade costs display
+      Array.from(upgradesEl.children).forEach((div, idx)=>{
+        const costEl = div.querySelector('.up-cost'); costEl.textContent = fmt(ALL_UPGRADES[idx].cost);
+      });
+    }
+
+    // --- Rebirth / Prestige ---
+    document.getElementById('rebirthBtn').addEventListener('click', ()=>{
+      // cost grows large
+      const req = 50_000_000 * Math.pow(5, state.rebirths);
+      if(state.fuel < req){ alert(`Need ${fmt(req)} fuel to rebirth`); return; }
+      // perform rebirth
+      state.rebirths++;
+      state.multiplier += 0.5; // small permanent boost
+      state.fuel = 0; state.cps = 0; state.upgradesBought = {};
+      // reset upgrade costs to base values
+      ALL_UPGRADES.forEach((u, i)=>{ /* rebuild base costs from id pattern */
+        // naive reset based on index ranges for balanced feel
+        const base = [200,900,3200,12000,48000,200000,900000,4200000,18000000,80000000,320000000,1500000000,6600000000,30000000000,120000000000,500000000000,2100000000000,9000000000000,40000000000000,180000000000000,800000000000000,3600000000000000,16000000000000000,75000000000000000];
+        u.cost = base[i];
+      });
+      saveStateDebounced(); renderAll(); renderUpgrades();
+      toast('Rebirth! multiplier increased');
+    });
+
+    // small toast
+    function toast(txt){ const t=document.createElement('div'); t.textContent=txt; Object.assign(t.style,{position:'fixed',left:'50%',transform:'translateX(-50%)',bottom:'24px',background:'linear-gradient(90deg,var(--accent),var(--accent2))',padding:'10px 16px',borderRadius:'999px',color:'#021428',fontWeight:800,boxShadow:'0 12px 40px rgba(0,0,0,0.5)',zIndex:9999}); document.body.appendChild(t); setTimeout(()=>{t.style.opacity=0;t.style.transform='translateX(-50%) translateY(16px)';},1600); setTimeout(()=>t.remove(),2400); }
+
+    // --- Save / Load / Export / Import ---
+    function saveState(){ localStorage.setItem(SAVE_KEY, JSON.stringify(state)); document.getElementById('saveBtn').textContent='Saved'; setTimeout(()=>document.getElementById('saveBtn').textContent='Save',900); }
+    const saveStateDebounced = debounce(saveState,800);
+    function loadState(){ try{ const raw = localStorage.getItem(SAVE_KEY); if(!raw) return; state = Object.assign(state, JSON.parse(raw)); renderAll(); }catch(e){console.error(e);} }
+    function exportSave(){ const data = btoa(unescape(encodeURIComponent(JSON.stringify({state, ALL_UPGRADES})))); navigator.clipboard?.writeText(data).then(()=>toast('Export copied to clipboard')); const blob = new Blob([JSON.stringify({state, ALL_UPGRADES},null,2)],{type:'application/json'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='rocket_save.json'; a.click(); URL.revokeObjectURL(a.href); }
+    function importSave(){ const txt = prompt('Paste exported save string (base64) or raw JSON'); if(!txt) return; try{ let parsed; if(/^[A-Za-z0-9+/=]+$/.test(txt.trim())) parsed = JSON.parse(decodeURIComponent(escape(atob(txt.trim())))); else parsed = JSON.parse(txt); if(parsed.state) state = parsed.state; if(parsed.ALL_UPGRADES) { /* replace costs so UI matches */ for(let i=0;i<ALL_UPGRADES.length;i++){ if(parsed.ALL_UPGRADES[i] && parsed.ALL_UPGRADES[i].cost) ALL_UPGRADES[i].cost = parsed.ALL_UPGRADES[i].cost; } } saveState(); renderAll(); renderUpgrades(); toast('Imported save'); }catch(e){alert('Invalid import');} }
+
+    document.getElementById('saveBtn').addEventListener('click', saveState);
+    document.getElementById('exportBtn').addEventListener('click', exportSave);
+    document.getElementById('importBtn').addEventListener('click', importSave);
+
+    // debounce helper
+    function debounce(fn, ms){ let t; return function(){ clearTimeout(t); t=setTimeout(()=>fn.apply(this,arguments),ms); } }
+
+    // load on start
+    loadState(); renderUpgrades(); renderAll();
+
+  </script>
+</body>
+</html>
