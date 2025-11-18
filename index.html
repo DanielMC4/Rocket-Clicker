@@ -90,15 +90,16 @@ let cps = 0;
 let rebirthCount = 0;
 let multiplier = 1;
 
+// MUCH HARDER, MORE GRINDY COSTS
 const upgrades = [
-  {name: "Mini Booster", cost: 20, cps: 1},
-  {name: "Medium Booster", cost: 100, cps: 5},
-  {name: "Large Booster", cost: 500, cps: 20},
-  {name: "Space Drone", cost: 2000, cps: 100},
-  {name: "Satellite Array", cost: 10000, cps: 500},
-  {name: "Fuel Planet", cost: 50000, cps: 2500},
-  {name: "Dyson Extractor", cost: 250000, cps: 10000},
-  {name: "Galaxy Harvester", cost: 1_000_000, cps: 50000}
+  {name: "Mini Booster", cost: 200, cps: 0.2},
+  {name: "Medium Booster", cost: 1500, cps: 1},
+  {name: "Large Booster", cost: 10000, cps: 4},
+  {name: "Space Drone", cost: 60000, cps: 12},
+  {name: "Satellite Array", cost: 300000, cps: 50},
+  {name: "Fuel Planet", cost: 1_000_000, cps: 150},
+  {name: "Dyson Extractor", cost: 5_000_000, cps: 600},
+  {name: "Galaxy Harvester", cost: 25_000_000, cps: 2500}
 ];
 
 function renderUpgrades() {
@@ -118,9 +119,45 @@ function buyUpgrade(i) {
   if (fuel >= u.cost) {
     fuel -= u.cost;
     cps += u.cps * multiplier;
-    u.cost = Math.floor(u.cost * 1.5);
+    // MUCH HARDER SCALING
+    u.cost = Math.floor(u.cost * 2);
     update();
     renderUpgrades();
+  }
+}
+
+document.getElementById("rocket").onclick = () => {
+  // HARDER CLICK VALUE
+  fuel += 0.5 * multiplier;
+  const r = document.getElementById("rocket");
+  r.classList.add("shake");
+  setTimeout(() => r.classList.remove("shake"), 200);
+  update();
+};
+
+// MUCH HARDER PROGRESSION
+setInterval(() => {
+  fuel += cps * 0.5;
+  update();
+}, 1000);
+
+function update() {
+  document.getElementById("fuel").innerText = `Fuel: ${Math.floor(fuel)}`;
+  document.getElementById("cps").innerText = `Fuel per second: ${Math.floor(cps * 0.5)}`;
+  document.getElementById("rebirths").innerText = `Rebirths: ${rebirthCount}`;
+}
+
+function rebirth() {
+  if (fuel < 5_000_000) return alert("Need 5 MILLION fuel to rebirth!");
+  fuel = 0;
+  cps = 0;
+  rebirthCount++;
+  multiplier = 1 + rebirthCount * 0.5;
+  renderUpgrades();
+  update();
+}
+
+renderUpgrades();
   }
 }
 
